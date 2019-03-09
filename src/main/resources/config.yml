@@ -1,0 +1,6 @@
+classes:
+  - com.vettiankal.*
+  - com.minertainment.*
+
+hook: com.vettiankal.TestMethodHook
+default_enabled: true
