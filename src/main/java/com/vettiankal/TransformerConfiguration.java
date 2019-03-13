@@ -6,7 +6,7 @@ public class TransformerConfiguration {
 
     private List<String> classes;
     private String hook;
-    private boolean default_enabled;
+    private boolean defaultEnabled;
 
     public List<String> getClasses() {
         return classes;
@@ -23,4 +23,13 @@ public class TransformerConfiguration {
     public void setHook(String hook) {
         this.hook = hook;
     }
+
+    public boolean isDefaultEnabled() {
+        return defaultEnabled;
+    }
+
+    public void setDefaultEnabled(boolean defaultEnabled) {
+        this.defaultEnabled = defaultEnabled;
+    }
+
 }

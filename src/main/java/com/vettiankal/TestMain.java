@@ -2,15 +2,33 @@ package com.vettiankal;
 
 public class TestMain {
 
-    public void test0(int i, String j, TestMain k) {
-        TestMethodHook testMethodHook = new TestMethodHook();
-        testMethodHook.start(i, j, k);
+    private static boolean TEST = true;
+    private static boolean TEST2 = true;
+
+    public void test0(boolean b, short s, int i, long l, String j, TestMain k) {
+        TestMethodHook testMethodHook = null;
+        if(TEST) {
+            testMethodHook = new TestMethodHook();
+            testMethodHook.start(b, s, i, j, k, l);
+        }
+
         System.out.println("Test 0 called");
-        testMethodHook.stop();
+        if(testMethodHook != null) {
+            testMethodHook.stop();
+        }
     }
 
     protected void test1() {
+        TestMethodHook testMethodHook = null;
+        if(TEST2) {
+            testMethodHook = new TestMethodHook();
+            testMethodHook.start();
+        }
+
         System.out.println("Test 1 called");
+        if(testMethodHook != null) {
+            testMethodHook.stop();
+        }
     }
 
     private void test2() {
@@ -31,7 +49,7 @@ public class TestMain {
 
     public static void main(String... args) {
         TestMain test = new TestMain();
-        test.test0(0, "", null);
+        test.test0(false, (short)0, 0,0, "", null);
         test.test1();
         test.test2();
         test3();

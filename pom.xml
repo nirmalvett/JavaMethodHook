@@ -49,6 +49,7 @@
                     <artifactSet>
                         <includes>
                             <include>org.yaml:snakeyaml</include>
+                            <include>org.apache.bcel:bcel</include>
                         </includes>
                     </artifactSet>
                     <createDependencyReducedPom>false</createDependencyReducedPom>

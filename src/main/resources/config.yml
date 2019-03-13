@@ -3,4 +3,4 @@ classes:
   - com.minertainment.*
 
 hook: com.vettiankal.TestMethodHook
-default_enabled: true
+defaultEnabled: true
