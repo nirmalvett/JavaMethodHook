@@ -21,9 +21,11 @@ public class MethodTransformer implements ClassFileTransformer {
     public static final String IDENTIFIER = "_MT20190309_";
 
     private List<String> classes;
+    private String hook;
 
-    public MethodTransformer(List<String> classes) {
+    public MethodTransformer(List<String> classes, String hook) {
         this.classes = classes;
+        this.hook = hook.replace("/", ".");
     }
 
     @Override
@@ -37,13 +39,17 @@ public class MethodTransformer implements ClassFileTransformer {
         }
     }
 
-    public byte[] transform0(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IOException {
+    private byte[] transform0(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IOException {
         boolean transform = false;
         for(String s : classes) {
             if(className.matches(s)) {
                 transform = true;
                 break;
             }
+        }
+
+        if(className.equals(hook)) {
+            transform = false;
         }
 
         if(!transform) {
@@ -101,7 +107,7 @@ public class MethodTransformer implements ClassFileTransformer {
                             0x59,                                     // [dup] duplicate array to stack
                             0x10, (byte) arrayIndex,                  // [bipush, array index] push the index to the stack
                             tSpecific[0], tSpecific[1],               // [load, local variable index] local variable on stack
-                            tSpecific[2], tSpecific[3], tSpecific[4], // [invokestatic, constant pool index] call static method to box type
+                            tSpecific[2], tSpecific[3], tSpecific[4], // [invokestatic, constant pool index] call static method to box type to object
                             0x53                                      // [aastore] save value in array
                     });
                 } else if(type instanceof ObjectType) {
@@ -120,9 +126,11 @@ public class MethodTransformer implements ClassFileTransformer {
             methodCode.write(codeBytes);
 
             methodCode.write(new byte[] {
-
+                    (byte)0x19, 0x19, (byte)0xFF, (byte)0xFF, // [wide, astore, 16bit index] store null @ the following location in local variable
             });
         }
+
+        //TODO update line number table and local variable table
 
 
         ByteArrayOutputStream newClazz = new ByteArrayOutputStream();
@@ -132,11 +140,51 @@ public class MethodTransformer implements ClassFileTransformer {
     }
 
     private static byte[] bTypeLoad(Type type, int arrayIndex, int localVariableIndex) {
-        return new byte[]{};
-    }
-
-    private static byte[] oTypeLoad(Type type, int arrayIndex, int localVariableIndex) {
-        return new byte[]{};
+        switch (type.getType()) {
+            case 4: // boolean
+                return new byte[] {
+                        0x15, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            case 5: // char
+                return new byte[] {
+                        0x15, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            case 6: // float
+                return new byte[] {
+                        0x17, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            case 7: // double
+                return new byte[] {
+                        0x18, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            case 8: // byte
+                return new byte[] {
+                        0x15, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            case 9: // short
+                return new byte[] {
+                        0x15, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            case 10: // int
+                return new byte[] {
+                        0x15, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            case 11: // long
+                return new byte[] {
+                        0x16, (byte)localVariableIndex,
+                        (byte)0xB8, 0x00, 0x00
+                };
+            default:
+                System.err.println("Encountered unknown type " + type.getType());
+                throw new RuntimeException("Unexpected type");
+        }
     }
 
     /*

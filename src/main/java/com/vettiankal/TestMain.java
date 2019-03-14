@@ -5,17 +5,27 @@ public class TestMain {
     private static boolean TEST = true;
     private static boolean TEST2 = true;
 
-    public void test0(boolean b, short s, int i, long l, String j, TestMain k) {
+    public int test0(boolean b, char c, short s, int i, long l, String j, TestMain k) {
+        int one = 1;
+        int two = 2;
+        switch(i) {
+            case 0: return one;
+            case 1: return two;
+        }
+
         TestMethodHook testMethodHook = null;
         if(TEST) {
             testMethodHook = new TestMethodHook();
-            testMethodHook.start(b, s, i, j, k, l);
+            testMethodHook.start(b, c, s, i, l, j, k);
         }
 
         System.out.println("Test 0 called");
         if(testMethodHook != null) {
-            testMethodHook.stop();
+            testMethodHook.stop(null);
+            return one;
         }
+
+        return two;
     }
 
     protected void test1() {
@@ -27,7 +37,7 @@ public class TestMain {
 
         System.out.println("Test 1 called");
         if(testMethodHook != null) {
-            testMethodHook.stop();
+            testMethodHook.stop(null);
         }
     }
 
@@ -49,7 +59,7 @@ public class TestMain {
 
     public static void main(String... args) {
         TestMain test = new TestMain();
-        test.test0(false, (short)0, 0,0, "", null);
+        test.test0(false, 'f', (short)0, 0,0, "", null);
         test.test1();
         test.test2();
         test3();
