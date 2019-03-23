@@ -5,7 +5,7 @@ public class TestMain {
     private static boolean TEST = true;
     private static boolean TEST2 = true;
 
-    public int test0(boolean b, char c, short s, int i, long l, String j, TestMain k) {
+    public int test0(boolean b, char c, short s, int i, long l, String j, TestMain k, Object[] arr) {
         int one = 1;
         int two = 2;
         switch(i) {
@@ -16,7 +16,7 @@ public class TestMain {
         TestMethodHook testMethodHook = null;
         if(TEST) {
             testMethodHook = new TestMethodHook();
-            testMethodHook.start(b, c, s, i, l, j, k);
+            testMethodHook.start(b, c, s, i, l, j, k, arr);
         }
 
         System.out.println("Test 0 called");
@@ -59,7 +59,7 @@ public class TestMain {
 
     public static void main(String... args) {
         TestMain test = new TestMain();
-        test.test0(false, 'f', (short)0, 0,0, "", null);
+        test.test0(false, 'f', (short)0, 0,0, "", null, new Object[]{});
         test.test1();
         test.test2();
         test3();
