@@ -42,7 +42,7 @@ public class MethodTimer {
         }
 
         if(config != null) {
-            inst.addTransformer(new ClassTransformer(config.getClasses(), config.getHook()), false);
+            inst.addTransformer(new ClassTransformer(config), false);
             System.out.println("Added class transformer");
         }  else {
             System.out.println("Unable to add class transformer");

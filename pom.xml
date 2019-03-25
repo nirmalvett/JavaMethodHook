@@ -15,14 +15,14 @@
             <version>1.24</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.bcel</groupId>
-            <artifactId>bcel</artifactId>
-            <version>6.0</version>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>7.1</version>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-            <version>5.0.3</version>
+            <artifactId>asm-commons</artifactId>
+            <version>7.1</version>
         </dependency>
     </dependencies>
 
@@ -53,7 +53,8 @@
                     <artifactSet>
                         <includes>
                             <include>org.yaml:snakeyaml</include>
-                            <include>org.apache.bcel:bcel</include>
+                            <include>org.ow2.asm:asm</include>
+                            <include>org.ow2.asm:asm-commons</include>
                         </includes>
                     </artifactSet>
                     <createDependencyReducedPom>false</createDependencyReducedPom>

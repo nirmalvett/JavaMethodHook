@@ -1,7 +1,10 @@
 package com.vettiankal;
 
+import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.*;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -12,20 +15,23 @@ public class ClassTransformer extends ClassVisitor implements ClassFileTransform
 
     public static final String PERIOD = "㐀";
     public static final String COMMA = "㐁";
-    public static final String SEMICOLON = "㐂";
     public static final String IDENTIFIER = "_MT20190309_";
 
     private List<String> classes;
-    private String hook;
+    private String hookClassPath;
+    private String className;
+    private boolean def;
 
-    public ClassTransformer(List<String> classes, String hook) {
+    public ClassTransformer(TransformerConfiguration config) {
         super(ASM5);
-        this.classes = classes;
-        this.hook = hook.replace("/", ".");
+        this.classes = config.getClasses();
+        this.hookClassPath = config.getHook().replace(".", "/");
+        this.def = config.isDefaultEnabled();
     }
 
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+        this.className = className;
         try {
             return transform0(loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
         } catch (Throwable e) {
@@ -44,7 +50,7 @@ public class ClassTransformer extends ClassVisitor implements ClassFileTransform
             }
         }
 
-        if(className.equals(hook)) {
+        if(className.equals(hookClassPath)) {
             transform = false;
         }
 
@@ -56,22 +62,30 @@ public class ClassTransformer extends ClassVisitor implements ClassFileTransform
         ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
         this.cv = cw;
         cr.accept(this, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-        return cw.toByteArray();
+        byte[] arr = cw.toByteArray();
+        File file = new File(className);
+        file.getParentFile().mkdirs();
+        file.createNewFile();
+        FileOutputStream output = new FileOutputStream(file);
+        output.write(arr);
+        output.close();
+        return arr;
     }
 
     @Override
-    public MethodVisitor visitMethod(final int access, final String name,
-                                     final String desc, final String signature, final String[] exceptions) {
+    public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+        cv.visitField(ACC_PUBLIC, IDENTIFIER + name + desc, "Z", null, def);
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-        return mv == null ? null : new MethodTransformer(mv);
+        LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, mv);
+        return mv == null ? null : new MethodTransformer(sorter, className == null ? "null" : className, name, desc, hookClassPath, access);
     }
 
     /*
-        Takes string in the format class::method(args)
-        Eg. com.vettiankal.MethodTransform::methodToVariableString(java.lang.String)
+        Takes string in the format method(args)
+        Eg. methodToVariableString(java.lang.String)
      */
     public static String methodToVariableString(String method) {
-        return IDENTIFIER + method.replace(".", PERIOD).replace(",", COMMA).replace(":", SEMICOLON);
+        return IDENTIFIER + method.replace(".", PERIOD).replace(",", COMMA);
     }
 
 }

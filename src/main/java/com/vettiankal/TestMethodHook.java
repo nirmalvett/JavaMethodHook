@@ -6,7 +6,7 @@ public class TestMethodHook {
 
     private long time;
 
-    public void start(Object... args) {
+    public void start(String classPath, String methodName, Object... args) {
         System.out.println(Arrays.toString(args));
         time = System.currentTimeMillis();
     }
