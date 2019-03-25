@@ -14,7 +14,11 @@ import java.util.List;
 public class ClassTransformer extends ClassVisitor implements ClassFileTransformer, Opcodes {
 
     public static final String PERIOD = "㐀";
-    public static final String COMMA = "㐁";
+    public static final String SEMICOLON = "㐁";
+    public static final String ARRAY_BRACKET = "電";
+    public static final String BRACKET = "買";
+    public static final String BACKWARDS_BRACKET = "無";
+    public static final String SLASH = "車";
     public static final String IDENTIFIER = "_MT20190309_";
 
     private List<String> classes;
@@ -23,7 +27,7 @@ public class ClassTransformer extends ClassVisitor implements ClassFileTransform
     private boolean def;
 
     public ClassTransformer(TransformerConfiguration config) {
-        super(ASM5);
+        super(ASM7);
         this.classes = config.getClasses();
         this.hookClassPath = config.getHook().replace(".", "/");
         this.def = config.isDefaultEnabled();
@@ -61,31 +65,35 @@ public class ClassTransformer extends ClassVisitor implements ClassFileTransform
         ClassReader cr = new ClassReader(classfileBuffer);
         ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
         this.cv = cw;
-        cr.accept(this, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        cr.accept(this, ClassReader.SKIP_FRAMES);
         byte[] arr = cw.toByteArray();
+
         File file = new File(className);
         file.getParentFile().mkdirs();
         file.createNewFile();
         FileOutputStream output = new FileOutputStream(file);
         output.write(arr);
         output.close();
+
         return arr;
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        cv.visitField(ACC_PUBLIC, IDENTIFIER + name + desc, "Z", null, def);
+        cv.visitField(ACC_PUBLIC | ACC_STATIC, cleanString(IDENTIFIER + name + desc), "Z", null, def).visitEnd();
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
         LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, mv);
-        return mv == null ? null : new MethodTransformer(sorter, className == null ? "null" : className, name, desc, hookClassPath, access);
+        return mv == null ? null : new MethodTransformer(sorter, mv, className == null ? "null" : className, name, desc, hookClassPath, access);
     }
 
-    /*
-        Takes string in the format method(args)
-        Eg. methodToVariableString(java.lang.String)
-     */
-    public static String methodToVariableString(String method) {
-        return IDENTIFIER + method.replace(".", PERIOD).replace(",", COMMA);
+    public static String cleanString(String method) {
+        return method
+                .replace(".", PERIOD)
+                .replace(";", SEMICOLON)
+                .replace("[", ARRAY_BRACKET)
+                .replace("/", SLASH)
+                .replace("(", BRACKET)
+                .replace(")", BACKWARDS_BRACKET);
     }
 
 }

@@ -24,8 +24,11 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
     private LocalVariablesSorter sorter;
     private int hookIndex;
 
-    public MethodTransformer(LocalVariablesSorter visitor, String classPath, String name, String desc, String hookClassPath, int access) {
-        super(ASM5, visitor);
+    private MethodVisitor bv;
+
+    public MethodTransformer(LocalVariablesSorter visitor, MethodVisitor baseVisitor, String classPath, String name, String desc, String hookClassPath, int access) {
+        super(ASM7, visitor);
+        this.bv = baseVisitor;
         this.classPath = classPath;
         this.name = name;
         this.desc = desc;
@@ -39,38 +42,39 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
         hookIndex = sorter.newLocal(Type.getType("L" + hookClassPath + ";"));
         List<String> params = parseMethodDesc(desc);
         Label ifDisabled = new Label();
-        int size = params.size() > 127 ? 127 : params.size(); // Cap parameters pushed to hook at 127
+
         boolean isStatic = Modifier.isStatic(access);
+        int maxParams = isStatic ? 127 : 126;
+        int size = params.size() > maxParams ? maxParams : params.size(); // Cap parameters pushed to hook at 127
         boolean isInit = name.equals("<init>");
-        if(!isStatic && !isInit && size == 127) {
-            size--;
-        }
 
         mv.visitInsn(ACONST_NULL);
-        mv.visitVarInsn(ASTORE, hookIndex);
-        mv.visitFieldInsn(GETSTATIC, classPath, ClassTransformer.IDENTIFIER + name + desc, "Z");
+        bv.visitVarInsn(ASTORE, hookIndex);
+        mv.visitFieldInsn(GETSTATIC, classPath, ClassTransformer.cleanString(ClassTransformer.IDENTIFIER + name + desc), "Z");
         mv.visitJumpInsn(IFEQ, ifDisabled);
         mv.visitTypeInsn(NEW, hookClassPath);
         mv.visitInsn(DUP);
         mv.visitMethodInsn(INVOKESPECIAL, hookClassPath, "<init>", "()V", false);
-        mv.visitVarInsn(ASTORE, hookIndex);
-        mv.visitVarInsn(ALOAD, hookIndex);
+        bv.visitVarInsn(ASTORE, hookIndex);
+        bv.visitVarInsn(ALOAD, hookIndex);
         mv.visitLdcInsn(classPath);
         mv.visitLdcInsn(name);
-        mv.visitIntInsn(BIPUSH, size);
+        mv.visitIntInsn(BIPUSH, size + (!isStatic ? 1 : 0));
         mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
 
+        int pushed = 0;
         if(!isStatic && !isInit) {
             mv.visitInsn(DUP);
-            mv.visitIntInsn(BIPUSH, 0);
+            mv.visitIntInsn(BIPUSH, pushed++);
             mv.visitVarInsn(ALOAD, 0);
             mv.visitInsn(AASTORE);
         }
 
+        int paramIndex = isStatic ? 0 : 1;
         for(int i = 0; i < size; i++) {
             mv.visitInsn(DUP);
-            mv.visitIntInsn(BIPUSH, i + (isStatic || isInit ? 0 : 1));
-            visitParam(mv, params.get(i), i + (isStatic ? 0 : 1));
+            mv.visitIntInsn(BIPUSH, pushed++);
+            paramIndex = visitParam(mv, params.get(i), paramIndex);
             mv.visitInsn(AASTORE);
         }
 
@@ -85,7 +89,7 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
         if(opcode >= IRETURN && opcode <= RETURN) {
             Label ifDisabled = new Label();
 
-            mv.visitVarInsn(ALOAD, hookIndex);
+            bv.visitVarInsn(ALOAD, hookIndex);
             mv.visitJumpInsn(IFNULL, ifDisabled);
 
             switch (opcode) {
@@ -109,12 +113,12 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
                     mv.visitInsn(DUP);
                     break;
                 case RETURN:
+                    //TODO maybe add some constant here as the return to indicate void, to diff between void and null returns
                     mv.visitInsn(ACONST_NULL);
                     break;
             }
 
-            mv.visitVarInsn(ALOAD, hookIndex);
-            mv.visitInsn(DUP);
+            bv.visitVarInsn(ALOAD, hookIndex);
             mv.visitInsn(SWAP);
             mv.visitMethodInsn(INVOKEVIRTUAL, hookClassPath, "stop", "(Ljava/lang/Object;)V", false);
 
@@ -124,49 +128,50 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
         mv.visitInsn(opcode);
     }
 
-    private static void visitParam(MethodVisitor visitor, String param, int paramIndex) {
+    private static int visitParam(MethodVisitor visitor, String param, int paramIndex) {
         switch(param.charAt(0)) {
             case 'Z':
                 visitor.visitVarInsn(ILOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
-                break;
+                return paramIndex + 1;
             case 'B':
                 visitor.visitVarInsn(ILOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false);
-                break;
+                return paramIndex + 1;
             case 'C':
                 visitor.visitVarInsn(ILOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;", false);
-                break;
+                return paramIndex + 1;
             case 'S':
                 visitor.visitVarInsn(ILOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false);
-                break;
+                return paramIndex + 1;
             case 'I':
                 visitor.visitVarInsn(ILOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
-                break;
+                return paramIndex + 1;
             case 'F':
                 visitor.visitVarInsn(FLOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
-                break;
+                return paramIndex + 1;
             case 'D':
                 visitor.visitVarInsn(DLOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
-                break;
+                return paramIndex + 2;
             case 'J':
                 visitor.visitVarInsn(LLOAD, paramIndex);
                 visitor.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false);
-                break;
+                return paramIndex + 2;
             case '[':
             case 'L':
                 visitor.visitVarInsn(ALOAD, paramIndex);
-                break;
+                return paramIndex + 1;
             default:
                 throw new IllegalArgumentException("Unable to parse parameter: " + param);
         }
     }
 
+    // TODO Type.getArgumentTypes(descriptor);
     private static List<String> parseMethodDesc(String desc) {
         int beginIndex = desc.indexOf('(');
         int endIndex = desc.lastIndexOf(')');
@@ -177,8 +182,7 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
         String x0;
         if(beginIndex == -1) {
             x0 = desc;
-        }
-        else {
+        } else {
             x0 = desc.substring(beginIndex + 1, endIndex);
         }
 
