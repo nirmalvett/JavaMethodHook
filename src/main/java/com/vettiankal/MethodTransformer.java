@@ -98,7 +98,7 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
                     break;
                 case LRETURN:
-                    mv.visitInsn(DUP);
+                    mv.visitInsn(DUP2);
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false);
                     break;
                 case FRETURN:
@@ -106,7 +106,7 @@ public class MethodTransformer extends MethodVisitor implements Opcodes {
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
                     break;
                 case DRETURN:
-                    mv.visitInsn(DUP);
+                    mv.visitInsn(DUP2);
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
                     break;
                 case ARETURN:
