@@ -3,8 +3,6 @@ package com.vettiankal;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -103,15 +101,15 @@ public class ClassTransformer extends ClassVisitor implements ClassFileTransform
 
     private static String getDescriptorForClass(Class c) {
         if(c.isPrimitive()) {
-            if(c==byte.class) return "B";
-            if(c==char.class) return "C";
-            if(c==double.class) return "D";
-            if(c==float.class) return "F";
-            if(c==int.class) return "I";
-            if(c==long.class) return "J";
-            if(c==short.class) return "S";
-            if(c==boolean.class) return "Z";
-            if(c==void.class) return "V";
+            if(c == byte.class) return "B";
+            if(c == char.class) return "C";
+            if(c == double.class) return "D";
+            if(c == float.class) return "F";
+            if(c == int.class) return "I";
+            if(c == long.class) return "J";
+            if(c == short.class) return "S";
+            if(c == boolean.class) return "Z";
+            if(c == void.class) return "V";
             throw new RuntimeException("Unrecognized primitive " + c);
         }
 
